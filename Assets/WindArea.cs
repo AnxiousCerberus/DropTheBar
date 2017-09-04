@@ -45,7 +45,6 @@ public class WindArea : MonoBehaviour {
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        Debug.Log(collision.transform.name);
         if (collision.transform.CompareTag("Player"))
         {
             Debug.Log("Player in wind area");
