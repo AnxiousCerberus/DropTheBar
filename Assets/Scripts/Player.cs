@@ -19,7 +19,8 @@ public class Player : Characters
 
     #region Status Vars
     bool jump = false;
-    public Vector2 playerWindDirection = Vector2.zero;
+    public Vector2 currentWindDirection = Vector2.zero;
+    public Vector2 targetWindDirection = Vector2.zero;
     bool onBar = false;
     bool currentEnabled = true;
     enum moveState { InWind, OnBar };
@@ -57,6 +58,8 @@ public class Player : Characters
 
     private void Update()
     {
+        currentWindDirection = Vector3.Lerp(currentWindDirection, targetWindDirection, .05f);
+
         bool simpleTap = false;
         Vector2 swipeDir = Vector2.zero;
 
@@ -153,7 +156,7 @@ public class Player : Characters
             jump = Input.GetButtonDown("Jump");
             Debug.Log("Above = " + collisions.above + " Below = " + collisions.below + " Jump = " + jump);
 
-            if (playerWindDirection == Vector2.zero)
+            if (currentWindDirection == Vector2.zero)
             {
                 //Regular Jump
                 if (jump && collisions.below)
@@ -171,7 +174,7 @@ public class Player : Characters
             }
             else if (currentEnabled)
             {
-                _moveDirection = playerWindDirection;
+                _moveDirection = currentWindDirection;
                 Debug.Log("Player took wind direction");
             }
 

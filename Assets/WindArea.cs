@@ -48,7 +48,8 @@ public class WindArea : MonoBehaviour {
         if (collision.transform.CompareTag("Player"))
         {
             Debug.Log("Player in wind area");
-            player.playerWindDirection += windAxis;
+            //thisCollider.bounds.clo
+            player.targetWindDirection += windAxis;
         }
     }
 
@@ -58,7 +59,7 @@ public class WindArea : MonoBehaviour {
         if (collision.transform.CompareTag("Player"))
         {
             Debug.Log("Player in wind area");
-            player.playerWindDirection -= windAxis;
+            player.targetWindDirection -= windAxis;
         }
     }
 }
