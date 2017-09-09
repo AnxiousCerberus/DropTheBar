@@ -25,6 +25,8 @@ public class Player : Characters
     bool currentEnabled = true;
     enum moveState { InWind, OnBar };
     moveState currentMoveState = moveState.InWind;
+    GrabbingBar currentBar;
+    Vector2 swipeOnBarPlayerStartPos = Vector3.zero;
 
     //Misc state
     bool climbingDropDownPlatform = false;
@@ -46,6 +48,7 @@ public class Player : Characters
     Vector2 touchStartPos = Vector2.zero;
     Vector2 touchEndPos = Vector2.zero;
     Vector2 touchPreviousPos = Vector2.zero;
+    Vector2 dirFromStartToIntersection = Vector2.zero;
     #endregion
 
     private void Start()
@@ -80,7 +83,11 @@ public class Player : Characters
             touchDuration += Time.deltaTime;
 
             if (Input.GetTouch(0).phase == TouchPhase.Began)
+            {
                 touchStartPos = Input.GetTouch(0).position;
+                dirFromStartToIntersection = Vector3.zero;
+                swipeOnBarPlayerStartPos = transform.position;
+            }
 
             if (touchDuration > 0)
                 debugText.text += "touch Duration = " + touchDuration;
@@ -88,6 +95,8 @@ public class Player : Characters
             if (Input.GetTouch(0).phase == TouchPhase.Ended)
             {
                 touchEndPos = Input.GetTouch(0).position;
+                dirFromStartToIntersection = Vector3.zero;
+                touchPreviousPos = Vector2.zero;
 
                 //Simple tap check
                 if (touchDuration <= .35f)
@@ -111,15 +120,28 @@ public class Player : Characters
                 }
             }
 
+
+
             if (!simpleTap && Input.GetTouch(0).phase == TouchPhase.Moved)
             {
+                //Moving on bar
                 if (touchPreviousPos != Vector2.zero && onBar)
                 {
-                    transform.Translate ( (new Vector2 (0, touchPreviousPos.y) - new Vector2 (0,  touchStartPos.y)) * .0001f);
+                    Vector2 touchStartWorld = Camera.main.ScreenToWorldPoint(touchStartPos);
+                    Vector2 perpendicularBarDirection = Quaternion.Euler(0, 0, 90) * currentBar.barNormalizedDirection;
+                    Vector2 touchIntersectPoint = LineIntersectionPoint(touchStartWorld - currentBar.barNormalizedDirection * 100, touchStartWorld + currentBar.barNormalizedDirection * 100
+                        ,touchPreviousPos - perpendicularBarDirection * 100, touchPreviousPos + perpendicularBarDirection * 100);
+
+                    dirFromStartToIntersection = touchIntersectPoint - touchStartWorld;
+                    Debug.DrawLine(touchStartWorld, touchIntersectPoint, Color.white);
                 }
 
                 touchPreviousPos = Input.GetTouch(0).position;
+                touchPreviousPos = Camera.main.ScreenToWorldPoint(touchPreviousPos);
             }
+
+            if (dirFromStartToIntersection != Vector2.zero && onBar)
+                transform.position = Vector3.Lerp(transform.position, swipeOnBarPlayerStartPos + dirFromStartToIntersection, .1f);
         }
         else
         {
@@ -141,8 +163,6 @@ public class Player : Characters
             if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Moved)
             {
                 debugText.text = "MOVING FINGER! Position = " + Input.GetTouch(0).position + " tapCount = " + Input.GetTouch(0).tapCount;
-
-                //if (Input.GetTouch(0).position)
             }
         }
         else
@@ -220,10 +240,61 @@ public class Player : Characters
 
         if (other.CompareTag("Bar"))
         {
+            GrabbingBar bar = other.GetComponent<GrabbingBar>();
             onBar = true;
             _moveDirection = Vector3.zero; //Just grabbed bar, resetting current move dir to immobilize player
-            Debug.Log("Player on bar bitch");
+
+            bar.UpdateVars();
+
+            Vector3 targetPoint = transform.position;
+
+            if (Vector3.Dot (transform.up, bar.barNormalizedDirection) > .55f)
+            {
+                targetPoint = LineIntersectionPoint(transform.position - transform.right, transform.position + transform.right, bar.lowerPointOnBar, bar.upperPointOnBar);
+                Debug.Log("Horizontal test");
+            }
+            else
+            {
+                targetPoint = LineIntersectionPoint(transform.position - transform.up, transform.position + transform.up, bar.lowerPointOnBar, bar.upperPointOnBar);
+                Debug.Log("Vertical test");
+            }
+
+            transform.position = targetPoint;
+            swipeOnBarPlayerStartPos = transform.position;
+
+            if (Input.touchCount > 0)
+            {
+                touchStartPos = Input.GetTouch(0).position; //Avoid the player from moving when getting from bar to bar all while still having a touch input
+                dirFromStartToIntersection = Vector3.zero;
+                touchPreviousPos = Vector2.zero;
+            }
+
+            currentBar = bar;
         }
+    }
+
+    Vector2 LineIntersectionPoint(Vector2 ps1, Vector2 pe1, Vector2 ps2, Vector2 pe2)
+    {
+        // Get A,B,C of first line - points : ps1 to pe1
+        float A1 = pe1.y - ps1.y;
+        float B1 = ps1.x - pe1.x;
+        float C1 = A1 * ps1.x + B1 * ps1.y;
+
+        // Get A,B,C of second line - points : ps2 to pe2
+        float A2 = pe2.y - ps2.y;
+        float B2 = ps2.x - pe2.x;
+        float C2 = A2 * ps2.x + B2 * ps2.y;
+
+        // Get delta and check if the lines are parallel
+        float delta = A1 * B2 - A2 * B1;
+        if (delta == 0)
+            throw new System.Exception("Lines are parallel");
+
+        // now return the Vector2 intersection point
+        return new Vector2(
+            (B2 * C1 - B1 * C2) / delta,
+            (A1 * C2 - A2 * C1) / delta
+        );
     }
 
     private void OnTriggerExit2D(Collider2D other)
@@ -231,6 +302,7 @@ public class Player : Characters
         if (other.CompareTag("Bar"))
         {
             onBar = false;
+            currentBar = null;
         }
     }
 }
