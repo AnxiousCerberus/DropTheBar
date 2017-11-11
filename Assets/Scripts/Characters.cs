@@ -364,8 +364,8 @@ public class Characters : MonoBehaviour
         raycastOrigins.topLeft = new Vector2(bounds.min.x, bounds.max.y);
         raycastOrigins.topRight = new Vector2(bounds.max.x, bounds.max.y);
 
-        Debug.DrawLine(raycastOrigins.bottomLeft, raycastOrigins.topRight, Color.blue);
-        Debug.DrawLine(raycastOrigins.bottomRight, raycastOrigins.topLeft, Color.blue);
+        //Debug.DrawLine(raycastOrigins.bottomLeft, raycastOrigins.topRight, Color.blue);
+        //Debug.DrawLine(raycastOrigins.bottomRight, raycastOrigins.topLeft, Color.blue);
     }
 
     public void CalculateRaySpacing()

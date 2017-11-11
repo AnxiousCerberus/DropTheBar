@@ -22,10 +22,12 @@ public class Player : Characters
     public Vector2 currentWindDirection = Vector2.zero;
     public Vector2 targetWindDirection = Vector2.zero;
     bool onBar = false;
+    Vector3 barPreviousPos;
     bool currentEnabled = true;
     enum moveState { InWind, OnBar };
     moveState currentMoveState = moveState.InWind;
-    GrabbingBar currentBar;
+    public GrabbingBar currentBar;
+    Vector3 grabOffset = Vector2.zero;
     Vector2 swipeOnBarPlayerStartPos = Vector3.zero;
 
     //Misc state
@@ -48,7 +50,7 @@ public class Player : Characters
     Vector2 touchStartPos = Vector2.zero;
     Vector2 touchEndPos = Vector2.zero;
     Vector2 touchPreviousPos = Vector2.zero;
-    Vector2 dirFromStartToIntersection = Vector2.zero;
+    Vector3 dirFromStartToIntersection = Vector2.zero;
     #endregion
 
     private void Start()
@@ -66,6 +68,11 @@ public class Player : Characters
         bool simpleTap = false;
         Vector2 swipeDir = Vector2.zero;
 
+        if (currentBar != null)
+        {
+            transform.position =  currentBar.transform.position + grabOffset;
+            barPreviousPos = currentBar.transform.position;
+        }
 
         UpdateAnimator();
 
@@ -120,8 +127,6 @@ public class Player : Characters
                 }
             }
 
-
-
             if (!simpleTap && Input.GetTouch(0).phase == TouchPhase.Moved)
             {
                 //Moving on bar
@@ -133,15 +138,18 @@ public class Player : Characters
                         ,touchPreviousPos - perpendicularBarDirection * 100, touchPreviousPos + perpendicularBarDirection * 100);
 
                     dirFromStartToIntersection = touchIntersectPoint - touchStartWorld;
-                    Debug.DrawLine(touchStartWorld, touchIntersectPoint, Color.white);
+                    Debug.DrawLine(touchStartWorld, touchIntersectPoint, Color.green);
                 }
 
                 touchPreviousPos = Input.GetTouch(0).position;
                 touchPreviousPos = Camera.main.ScreenToWorldPoint(touchPreviousPos);
             }
 
-            if (dirFromStartToIntersection != Vector2.zero && onBar)
-                transform.position = Vector3.Lerp(transform.position, swipeOnBarPlayerStartPos + dirFromStartToIntersection, .1f);
+            if (dirFromStartToIntersection != Vector3.zero && onBar)
+            {
+                grabOffset = Vector3.Lerp(grabOffset, grabOffset + dirFromStartToIntersection, .1f);
+            }
+
         }
         else
         {
@@ -157,6 +165,7 @@ public class Player : Characters
 
             if (simpleTap)
             {
+                JustDroppedBar();
                 onBar = false;
             }
 
@@ -174,7 +183,6 @@ public class Player : Characters
             float targetVelocityX = input.x * speed;
 
             jump = Input.GetButtonDown("Jump");
-            Debug.Log("Above = " + collisions.above + " Below = " + collisions.below + " Jump = " + jump);
 
             if (currentWindDirection == Vector2.zero)
             {
@@ -195,7 +203,7 @@ public class Player : Characters
             else if (currentEnabled)
             {
                 _moveDirection = currentWindDirection;
-                Debug.Log("Player took wind direction");
+                //Debug.Log("Player took wind direction");
             }
 
         //Neutralizing Y moves when grounded, or head hitting ceiling or dashing
@@ -213,6 +221,36 @@ public class Player : Characters
 
     }
 
+
+
+    public void JustGrabbedBar (GrabbingBar bar, Vector2 targetPoint)
+    {
+        onBar = true;
+        barPreviousPos = bar.transform.position;
+        _moveDirection = Vector3.zero; //Just grabbed bar, resetting current move dir to immobilize player
+
+        bar.UpdateVars();
+
+        transform.position = targetPoint;
+        swipeOnBarPlayerStartPos = transform.position;
+
+        if (Input.touchCount > 0)
+        {
+            touchStartPos = Input.GetTouch(0).position; //Avoid the player from moving when getting from bar to bar all while still having a touch input
+            dirFromStartToIntersection = Vector3.zero;
+            touchPreviousPos = Vector2.zero;
+        }
+
+        grabOffset = transform.position - bar.transform.position;
+        currentBar = bar;
+    }
+
+    public void JustDroppedBar ()
+    {
+        currentBar.postDropIgnore = true;
+        StartCoroutine (currentBar.PostDropIgnoreTimer());
+        currentBar = null;
+    }
 
     #region Misc Methods
     void UpdateAnimator()
@@ -236,41 +274,10 @@ public class Player : Characters
     private void OnTriggerEnter2D(Collider2D other)
     {
 
-        Debug.Log(other.transform.name);
-
-        if (other.CompareTag("Bar"))
+       /* if (other.CompareTag("Bar"))
         {
-            GrabbingBar bar = other.GetComponent<GrabbingBar>();
-            onBar = true;
-            _moveDirection = Vector3.zero; //Just grabbed bar, resetting current move dir to immobilize player
-
-            bar.UpdateVars();
-
-            Vector3 targetPoint = transform.position;
-
-            if (Vector3.Dot (transform.up, bar.barNormalizedDirection) > .55f)
-            {
-                targetPoint = LineIntersectionPoint(transform.position - transform.right, transform.position + transform.right, bar.lowerPointOnBar, bar.upperPointOnBar);
-                Debug.Log("Horizontal test");
-            }
-            else
-            {
-                targetPoint = LineIntersectionPoint(transform.position - transform.up, transform.position + transform.up, bar.lowerPointOnBar, bar.upperPointOnBar);
-                Debug.Log("Vertical test");
-            }
-
-            transform.position = targetPoint;
-            swipeOnBarPlayerStartPos = transform.position;
-
-            if (Input.touchCount > 0)
-            {
-                touchStartPos = Input.GetTouch(0).position; //Avoid the player from moving when getting from bar to bar all while still having a touch input
-                dirFromStartToIntersection = Vector3.zero;
-                touchPreviousPos = Vector2.zero;
-            }
-
-            currentBar = bar;
-        }
+           
+        }*/
     }
 
     Vector2 LineIntersectionPoint(Vector2 ps1, Vector2 pe1, Vector2 ps2, Vector2 pe2)

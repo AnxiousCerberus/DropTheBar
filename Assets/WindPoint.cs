@@ -50,7 +50,6 @@ public class WindPoint : MonoBehaviour {
     {
         if (collision.transform.CompareTag("Player"))
         {
-            Debug.Log("Player in wind area");
             //thisCollider.bounds.clo
             player.targetWindDirection = windDirection;
         }
