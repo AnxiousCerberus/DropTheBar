@@ -147,7 +147,30 @@ public class Player : Characters
 
             if (dirFromStartToIntersection != Vector3.zero && onBar)
             {
-                grabOffset = Vector3.Lerp(grabOffset, grabOffset + dirFromStartToIntersection, .1f);
+                Vector3 targetGrabOffset = Vector3.Lerp(grabOffset, grabOffset + dirFromStartToIntersection, .1f);
+
+
+                //Debug.Log("Bar Size = " + Vector3.SqrMagnitude(currentBar.up - currentBar.transform.position) + " & Current offset = " + Vector3.SqrMagnitude (grabOffset));
+
+                if (Vector3.SqrMagnitude(currentBar.up - currentBar.transform.position) < Vector3.SqrMagnitude(targetGrabOffset))
+                {
+                    Debug.Log("TRESHOLD!!!");
+                    targetGrabOffset = grabOffset;
+                }
+                else
+                    grabOffset = targetGrabOffset;
+
+                /*if (currentBar.transform.position.y + grabOffset.y > currentBar.up.y)
+                    Debug.Log("WAY UP ON Y");
+
+                if (currentBar.transform.position.y + grabOffset.y < currentBar.down.y)
+                    Debug.Log("WAY DOWN ON Y");
+
+                if (currentBar.transform.position.x + grabOffset.x > currentBar.up.y)
+                    Debug.Log("WAY UP ON X");
+
+                if (currentBar.transform.position.x + grabOffset.x > currentBar.up.y)
+                    Debug.Log("WAY DOWN ON X");*/
             }
 
         }

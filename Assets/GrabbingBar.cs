@@ -25,6 +25,8 @@ public class GrabbingBar : MonoBehaviour {
     public int pathPointIDNumber = 0;
     List<Transform> pathPoints = new List<Transform>();
 
+    BarManager manager; 
+
     public bool postDropIgnore = false;
 
     Player player;
@@ -35,6 +37,8 @@ public class GrabbingBar : MonoBehaviour {
         thisCollider = gameObject.GetComponent<Collider2D>();
         thisSprite = gameObject.GetComponent<SpriteRenderer>();
         player = GameObject.Find("Player").GetComponent<Player>();
+
+        manager = GameObject.FindObjectOfType<BarManager>().GetComponent<BarManager>();
 
         UpdateVars();
     }
@@ -63,12 +67,16 @@ public class GrabbingBar : MonoBehaviour {
         postDropIgnore = false;
     }
 
-private void FixedUpdate()
+    public Vector3 up;
+    public Vector3 down;
+    public Vector3 size;
+
+    private void FixedUpdate()
     {
         //Get real up point and down point of the bar
-        Vector3 size = gameObject.GetComponent<SpriteRenderer>().size;
-        Vector3 up = new Vector2(transform.position.x, transform.position.y + size.y * transform.localScale.y / 2);
-        Vector3 down = new Vector2(transform.position.x, transform.position.y - size.y * transform.localScale.y / 2);
+        size = gameObject.GetComponent<SpriteRenderer>().size;
+        up = new Vector2(transform.position.x, transform.position.y + size.y * transform.localScale.y / 2);
+        down = new Vector2(transform.position.x, transform.position.y - size.y * transform.localScale.y / 2);
 
         //Doing some rotation wizardry to get the two points
         Vector3 dir = up - transform.position;
@@ -81,7 +89,7 @@ private void FixedUpdate()
 
         Debug.DrawLine(up, down, Color.green);
 
-        RaycastHit2D barHit = Physics2D.Linecast(up, down);
+        RaycastHit2D barHit = Physics2D.Linecast(up, down, manager.barCheckIgnore);
 
         //Did we hit something on the bar ?
         if (barHit.transform != null)
@@ -124,7 +132,7 @@ private void FixedUpdate()
         }
 
         //Check arrived at path point
-        if (currentPathPoint != null && Vector3.SqrMagnitude(transform.position - currentPathPoint.position) < .5f)
+        if (currentPathPoint != null && Vector3.SqrMagnitude(transform.position - currentPathPoint.position) < .01f)
         {
             //Get Next Path Point (Or Loop to first)
             int nextPointNumber = pathPointIDNumber++;
