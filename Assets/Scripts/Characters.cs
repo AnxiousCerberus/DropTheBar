@@ -9,6 +9,10 @@ public class Characters : MonoBehaviour
     [Header("---!DEV MODE!---")]
     public bool ImmediateTestMode = false;
 
+    [Header("Common character vars")]
+    public int maxHealth = 4;
+    public int currentHealth = 4;
+
     #region Basic Moves Inspector Variables
     [Header("Basic moves options")]
     public bool GravityOn = true;
@@ -127,6 +131,12 @@ public class Characters : MonoBehaviour
     {
         calculatedGravity = -(2 * jumpHeight) / Mathf.Pow(timeToJumpApex, 2);
         calculatedJumpForce = Mathf.Abs(calculatedGravity) * timeToJumpApex;
+    }
+
+    private void Update()
+    {
+        if (currentHealth > maxHealth)
+            currentHealth = maxHealth;
     }
 
     private void LateUpdate()

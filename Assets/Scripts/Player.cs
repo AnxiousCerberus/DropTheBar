@@ -7,6 +7,8 @@ using UnityEngine.UI;
 public class Player : Characters
 {
     public Text debugText;
+    public Text Health;
+    public float HurtRecoveryTimer = 0;
 
     #region Inspector Customization
     //Basic moves Params
@@ -61,8 +63,19 @@ public class Player : Characters
 
     int touchReleaseCount = 0;
 
+    void UIInfosUpdate()
+    {
+        Health.text = "HEALTH = " + currentHealth.ToString() + " / " + maxHealth.ToString();
+    }
+
     private void Update()
     {
+        UIInfosUpdate();
+
+        //HurtRecoveryTimer
+        if (HurtRecoveryTimer >= 0)
+            HurtRecoveryTimer -= Time.deltaTime;
+
         currentWindDirection = Vector3.Lerp(currentWindDirection, targetWindDirection, .05f);
 
         bool simpleTap = false;
@@ -252,6 +265,9 @@ public class Player : Characters
         barPreviousPos = bar.transform.position;
         _moveDirection = Vector3.zero; //Just grabbed bar, resetting current move dir to immobilize player
 
+        //Make sure the player will go full wind speed when dropping the bar
+        currentWindDirection = targetWindDirection;
+
         bar.UpdateVars();
 
         transform.position = targetPoint;
@@ -294,13 +310,20 @@ public class Player : Characters
     }
     #endregion
 
+    void HurtRecoil ()
+    {
+        currentWindDirection = -_moveDirection * 1.5f;
+        HurtRecoveryTimer = 2f;
+    }
+
     private void OnTriggerEnter2D(Collider2D other)
     {
 
-       /* if (other.CompareTag("Bar"))
+        if (other.CompareTag("HurtObstacle") && HurtRecoveryTimer <= 0)
         {
-           
-        }*/
+            currentHealth--;
+            HurtRecoil();
+        }
     }
 
     Vector2 LineIntersectionPoint(Vector2 ps1, Vector2 pe1, Vector2 ps2, Vector2 pe2)
