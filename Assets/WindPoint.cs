@@ -11,7 +11,6 @@ public class WindPoint : MonoBehaviour {
 
     public WindDirection currentWindDirection = WindDirection.right;
     public float windForce = 2f;
-    Vector2 windAxis = Vector3.zero;
     Player player;
     Collider2D thisCollider;
     public Transform nextPoint;

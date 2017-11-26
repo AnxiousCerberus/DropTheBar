@@ -7,52 +7,33 @@ using UnityEngine.UI;
 public class Player : Characters
 {
     public Text debugText;
-    public Text Health;
     public float HurtRecoveryTimer = 0;
 
-    #region Inspector Customization
-    //Basic moves Params
-    [Header("Moves acceleration")]
-    [SerializeField]
-    float accelerationTimeAir = .2f;
-    [SerializeField]
-    float accelerationTimeGrounded = .1f;
-    #endregion
-
     #region Status Vars
-    bool jump = false;
+    //Wind
+    bool airStreamEnabled = true;
     public Vector2 currentWindDirection = Vector2.zero;
     public Vector2 targetWindDirection = Vector2.zero;
-    bool onBar = false;
-    Vector3 barPreviousPos;
-    bool currentEnabled = true;
-    enum moveState { InWind, OnBar };
-    moveState currentMoveState = moveState.InWind;
-    public GrabbingBar currentBar;
-    Vector3 grabOffset = Vector2.zero;
-    Vector2 swipeOnBarPlayerStartPos = Vector3.zero;
 
-    //Misc state
-    bool climbingDropDownPlatform = false;
-    bool droppingDropDownPlatform = false;
+    //Bar
+    bool onBar = false;
+    [HideInInspector]
+    public GrabbingBar currentBar;
+    Vector3 grabOffset = Vector2.zero; //Offset used to move player along bar
     #endregion
 
     #region Processing Vars
     [HideInInspector]
-    public Vector3 _moveDirection;
-    float velocityXSmoothing;
-    Vector3 input;
-
-    //Hehehe...
-    Transform mdr;
+    public Vector3 _moveDirection; //Final move direction, used to move player
     #endregion
 
     #region TouchStatus
-    float touchDuration = 0f;
+    float touchDuration = 0f; //mainly used to know if the user swiped or just tapped the screen
     Vector2 touchStartPos = Vector2.zero;
     Vector2 touchEndPos = Vector2.zero;
-    Vector2 touchPreviousPos = Vector2.zero;
+    Vector2 touchPreviousPos = Vector2.zero; //Used to store the touch pos of the previous frame
     Vector3 dirFromStartToIntersection = Vector2.zero;
+    bool simpleTap = false;
     #endregion
 
     private void Start()
@@ -61,131 +42,29 @@ public class Player : Characters
         CalculateRaySpacing();
     }
 
-    int touchReleaseCount = 0;
-
-    void UIInfosUpdate()
-    {
-        Health.text = "HEALTH = " + currentHealth.ToString() + " / " + maxHealth.ToString();
-    }
-
     private void Update()
     {
-        UIInfosUpdate();
+        simpleTap = false; //Resetting simpleTap for the beginning of this frame.
 
-        //HurtRecoveryTimer
-        if (HurtRecoveryTimer >= 0)
-            HurtRecoveryTimer -= Time.deltaTime;
-
+        HurtRecovery();
         currentWindDirection = Vector3.Lerp(currentWindDirection, targetWindDirection, .05f);
 
-        bool simpleTap = false;
-        Vector2 swipeDir = Vector2.zero;
-
+        //If attached to bar, force position to be relative to the bar
         if (currentBar != null)
         {
+            //Applying bar grab offset. This simulates the player being attached to the bar without using a transform parenting.
             transform.position =  currentBar.transform.position + grabOffset;
-            barPreviousPos = currentBar.transform.position;
         }
-
-        UpdateAnimator();
 
         //TODO : Normalize wind direction, maybe? Not sure how we can do this with other forces but...
 
-        if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended)
-        {
-            touchReleaseCount++;
-        }
-
-        debugText.text = "touchCount = " + Input.touchCount + " - touch release count = " + touchReleaseCount + " ";
-
         if (Input.touchCount > 0)
         {
-            touchDuration += Time.deltaTime;
+            //Collecting infos on touch input...
+            GetTouchInputStats();
 
-            if (Input.GetTouch(0).phase == TouchPhase.Began)
-            {
-                touchStartPos = Input.GetTouch(0).position;
-                dirFromStartToIntersection = Vector3.zero;
-                swipeOnBarPlayerStartPos = transform.position;
-            }
-
-            if (touchDuration > 0)
-                debugText.text += "touch Duration = " + touchDuration;
-
-            if (Input.GetTouch(0).phase == TouchPhase.Ended)
-            {
-                touchEndPos = Input.GetTouch(0).position;
-                dirFromStartToIntersection = Vector3.zero;
-                touchPreviousPos = Vector2.zero;
-
-                //Simple tap check
-                if (touchDuration <= .35f)
-                {
-                    if (Vector3.SqrMagnitude(touchStartPos - touchEndPos) < .75f)
-                    {
-                        debugText.text += " SIMPLE TAP! ";
-                        this.GetComponent<SpriteRenderer>().color = Color.red;
-                        simpleTap = true;
-                    }
-                }
-                
-                //Swipe check
-                if(!simpleTap)
-                {
-                    debugText.text += "SWIPE!";
-                    this.GetComponent<SpriteRenderer>().color = Color.blue;
-
-                    swipeDir = (touchEndPos - touchStartPos).normalized;
-
-                }
-            }
-
-            if (!simpleTap && Input.GetTouch(0).phase == TouchPhase.Moved)
-            {
-                //Moving on bar
-                if (touchPreviousPos != Vector2.zero && onBar)
-                {
-                    Vector2 touchStartWorld = Camera.main.ScreenToWorldPoint(touchStartPos);
-                    Vector2 perpendicularBarDirection = Quaternion.Euler(0, 0, 90) * currentBar.barNormalizedDirection;
-                    Vector2 touchIntersectPoint = LineIntersectionPoint(touchStartWorld - currentBar.barNormalizedDirection * 100, touchStartWorld + currentBar.barNormalizedDirection * 100
-                        ,touchPreviousPos - perpendicularBarDirection * 100, touchPreviousPos + perpendicularBarDirection * 100);
-
-                    dirFromStartToIntersection = touchIntersectPoint - touchStartWorld;
-                    Debug.DrawLine(touchStartWorld, touchIntersectPoint, Color.green);
-                }
-
-                touchPreviousPos = Input.GetTouch(0).position;
-                touchPreviousPos = Camera.main.ScreenToWorldPoint(touchPreviousPos);
-            }
-
-            if (dirFromStartToIntersection != Vector3.zero && onBar)
-            {
-                Vector3 targetGrabOffset = Vector3.Lerp(grabOffset, grabOffset + dirFromStartToIntersection, .1f);
-
-
-                //Debug.Log("Bar Size = " + Vector3.SqrMagnitude(currentBar.up - currentBar.transform.position) + " & Current offset = " + Vector3.SqrMagnitude (grabOffset));
-
-                if (Vector3.SqrMagnitude(currentBar.up - currentBar.transform.position) < Vector3.SqrMagnitude(targetGrabOffset))
-                {
-                    Debug.Log("TRESHOLD!!!");
-                    targetGrabOffset = grabOffset;
-                }
-                else
-                    grabOffset = targetGrabOffset;
-
-                /*if (currentBar.transform.position.y + grabOffset.y > currentBar.up.y)
-                    Debug.Log("WAY UP ON Y");
-
-                if (currentBar.transform.position.y + grabOffset.y < currentBar.down.y)
-                    Debug.Log("WAY DOWN ON Y");
-
-                if (currentBar.transform.position.x + grabOffset.x > currentBar.up.y)
-                    Debug.Log("WAY UP ON X");
-
-                if (currentBar.transform.position.x + grabOffset.x > currentBar.up.y)
-                    Debug.Log("WAY DOWN ON X");*/
-            }
-
+            //Translating touch inputs into character moves
+            MoveAlongBar();
         }
         else
         {
@@ -196,51 +75,30 @@ public class Player : Characters
         //Bar Behaviour
         if (onBar)
         {
-            currentEnabled = false;
-            GrabbingBar();
+            airStreamEnabled = false;
 
             if (simpleTap)
             {
                 JustDroppedBar();
                 onBar = false;
             }
-
-            if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Moved)
-            {
-                debugText.text = "MOVING FINGER! Position = " + Input.GetTouch(0).position + " tapCount = " + Input.GetTouch(0).tapCount;
-            }
         }
         else
         {
-            currentEnabled = true;
+            airStreamEnabled = true;
         }
 
-            //Walkin' and strollin' (but not on the beach) + some other basic moves
-            float targetVelocityX = input.x * speed;
-
-            jump = Input.GetButtonDown("Jump");
-
-            if (currentWindDirection == Vector2.zero)
-            {
-                //Regular Jump
-                if (jump && collisions.below)
-                {
-                    Debug.Log("Jumped");
-                    _moveDirection.y = calculatedJumpForce;
-                    jumping = true;
-                }
-
-                _moveDirection.x = Input.GetAxisRaw("Horizontal");
-
-                //Applying Gravity
-                if (GravityOn && !onBar)
-                    _moveDirection.y += calculatedGravity * Time.deltaTime;
-            }
-            else if (currentEnabled)
-            {
-                _moveDirection = currentWindDirection;
-                //Debug.Log("Player took wind direction");
-            }
+        //Gravity and wind!
+        if (currentWindDirection == Vector2.zero)
+        {
+            //Applying Gravity
+            if (GravityOn && !onBar)
+                _moveDirection.y += calculatedGravity * Time.deltaTime;
+        }
+        else if (airStreamEnabled)
+        {
+            _moveDirection = currentWindDirection;
+        }
 
         //Neutralizing Y moves when grounded, or head hitting ceiling or dashing
         if (collisions.above || collisions.below)
@@ -252,17 +110,75 @@ public class Player : Characters
         ApplyMoveAndCollisions(_moveDirection * Time.deltaTime);
     }
 
-    private void GrabbingBar()
+    void GetTouchInputStats ()
     {
+        touchDuration += Time.deltaTime;
 
+        if (Input.GetTouch(0).phase == TouchPhase.Began)
+        {
+            touchStartPos = Input.GetTouch(0).position; //Used for translating relative touch movement to character's movement on a bar
+            dirFromStartToIntersection = Vector3.zero;
+        }
+
+        if (touchDuration > 0)
+            debugText.text += "touch Duration = " + touchDuration;
+
+        if (Input.GetTouch(0).phase == TouchPhase.Ended)
+        {
+            touchEndPos = Input.GetTouch(0).position;
+            dirFromStartToIntersection = Vector3.zero;
+            touchPreviousPos = Vector2.zero;
+
+            //Simple tap check
+            if (touchDuration <= .35f)
+                if (Vector3.SqrMagnitude(touchStartPos - touchEndPos) < .75f)
+                    simpleTap = true;
+        }
     }
 
+    #region Bar Methods
+    void MoveAlongBar ()
+    {
+        //Moving on bar
+        //Translating touch inputs into character moves
+        if (!simpleTap && Input.GetTouch(0).phase == TouchPhase.Moved)
+        {
+            if (touchPreviousPos != Vector2.zero && onBar)
+            {
+                //Touch start point in world coordinates
+                Vector2 touchStartWorld = Camera.main.ScreenToWorldPoint(touchStartPos);
+                //Get the perpendicular direction of the bar...
+                Vector2 perpendicularBarDirection = Quaternion.Euler(0, 0, 90) * currentBar.barNormalizedDirection;
+                //...used here to get the intersection point between a bar that begins on the touch point and goes towards the bar
+                Vector2 touchIntersectPoint = LineIntersectionPoint(touchStartWorld - currentBar.barNormalizedDirection * 100, touchStartWorld + currentBar.barNormalizedDirection * 100
+                    , touchPreviousPos - perpendicularBarDirection * 100, touchPreviousPos + perpendicularBarDirection * 100);
 
+                //Now we have a direction that we can use later to translate it onto the character, so that they will move along the bar =)
+                dirFromStartToIntersection = touchIntersectPoint - touchStartWorld;
+                Debug.DrawLine(touchStartWorld, touchIntersectPoint, Color.green);
+            }
 
+            //Used to collect some infos that will be used in the next frame
+            touchPreviousPos = Input.GetTouch(0).position;
+            touchPreviousPos = Camera.main.ScreenToWorldPoint(touchPreviousPos);
+        }
+
+        //Okay, so if the touch direction we got is superior to zero...
+        if (dirFromStartToIntersection != Vector3.zero && onBar)
+        {
+            //GrabOffset is the character's target position on bar. It's anchor point is the bar's center
+            Vector3 targetGrabOffset = Vector3.Lerp(grabOffset, grabOffset + dirFromStartToIntersection, .1f);
+
+            //Prevent character to go beyond bar's ends
+            if (Vector3.SqrMagnitude(currentBar.up - currentBar.transform.position) < Vector3.SqrMagnitude(targetGrabOffset))
+                targetGrabOffset = grabOffset;
+            else
+                grabOffset = targetGrabOffset;
+        }
+    }
     public void JustGrabbedBar (GrabbingBar bar, Vector2 targetPoint)
     {
         onBar = true;
-        barPreviousPos = bar.transform.position;
         _moveDirection = Vector3.zero; //Just grabbed bar, resetting current move dir to immobilize player
 
         //Make sure the player will go full wind speed when dropping the bar
@@ -271,7 +187,6 @@ public class Player : Characters
         bar.UpdateVars();
 
         transform.position = targetPoint;
-        swipeOnBarPlayerStartPos = transform.position;
 
         if (Input.touchCount > 0)
         {
@@ -283,39 +198,15 @@ public class Player : Characters
         grabOffset = transform.position - bar.transform.position;
         currentBar = bar;
     }
-
     public void JustDroppedBar ()
     {
         currentBar.postDropIgnore = true;
         StartCoroutine (currentBar.PostDropIgnoreTimer());
         currentBar = null;
     }
-
-    #region Misc Methods
-    void UpdateAnimator()
-    {
-       /* animator.SetBool("Crouching", crouching);
-        animator.SetBool("Dashing", dashing);
-        animator.SetFloat("OutSpeed", Mathf.Abs(_moveDirection.x));
-        animator.SetBool("Grounded", collisions.below);
-        animator.SetFloat("InputDir", Mathf.Abs(Input.GetAxisRaw("Horizontal")));
-        animator.SetFloat("DashDuration", dashDuration / 100);
-        */
-    }
-
-    void CancelJump()
-    {
-        jumping = false;
-        _moveDirection.y = 0f;
-    }
     #endregion
 
-    void HurtRecoil ()
-    {
-        currentWindDirection = -_moveDirection * 1.5f;
-        HurtRecoveryTimer = 2f;
-    }
-
+    #region Get Hurt
     private void OnTriggerEnter2D(Collider2D other)
     {
 
@@ -325,6 +216,19 @@ public class Player : Characters
             HurtRecoil();
         }
     }
+    void HurtRecoil()
+    {
+        currentWindDirection = -_moveDirection * 1.5f;
+        HurtRecoveryTimer = 2f;
+    }
+    void HurtRecovery ()
+    {
+        //HurtRecoveryTimer
+        if (HurtRecoveryTimer >= 0)
+            HurtRecoveryTimer -= Time.deltaTime;
+    }
+    #endregion
+
 
     Vector2 LineIntersectionPoint(Vector2 ps1, Vector2 pe1, Vector2 ps2, Vector2 pe2)
     {
@@ -349,7 +253,6 @@ public class Player : Characters
             (A1 * C2 - A2 * C1) / delta
         );
     }
-
     private void OnTriggerExit2D(Collider2D other)
     {
         if (other.CompareTag("Bar"))
