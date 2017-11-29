@@ -220,6 +220,12 @@ public class Player : Characters
     {
         currentWindDirection = -_moveDirection * 1.5f;
         HurtRecoveryTimer = 2f;
+
+        if (onBar)
+        {
+            JustDroppedBar();
+            onBar = false;
+        }
     }
     void HurtRecovery ()
     {

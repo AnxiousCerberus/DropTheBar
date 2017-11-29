@@ -8,23 +8,28 @@ public class SpikyRing : MonoBehaviour {
     public GrabbingBar currentBar;
     bool aimUp = false;
 
+    const float targetMinOffset = .1f;
+    public float speed = .1f;
+
     // Use this for initialization
-    void Start () {
+    void Start ()
+    {
         currentBar = attachedBar.GetComponent<GrabbingBar>();
 	}
 	
 	// Update is called once per frame
 	void Update ()
     {
-        if (Vector3.Magnitude(transform.position - currentBar.up) < .01f)
+        if (Vector3.Magnitude(transform.position - currentBar.up) < targetMinOffset)
             aimUp = false;
-        else if (Vector3.Magnitude(transform.position - currentBar.down) < .01f)
+        else if (Vector3.Magnitude(transform.position - currentBar.down) < targetMinOffset)
             aimUp = true;
-            
-        if(aimUp)
-            transform.position = Vector3.Lerp(transform.position, currentBar.up, .1f);
-        else
-            transform.position = Vector3.Lerp(transform.position, currentBar.down, .1f);
+
+
+            if (aimUp)
+                transform.position = Vector3.MoveTowards(transform.position, currentBar.up, speed);
+            else
+                transform.position = Vector3.MoveTowards(transform.position, currentBar.down, speed);
     }
 
 }
