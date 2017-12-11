@@ -24,7 +24,7 @@ public class Player : Characters
 
     #region Processing Vars
     [HideInInspector]
-    public Vector3 _moveDirection; //Final move direction, used to move player
+    public Vector3 targetVelocity; //Final move direction, used to move player
     #endregion
 
     #region TouchStatus
@@ -93,21 +93,21 @@ public class Player : Characters
         {
             //Applying Gravity
             if (GravityOn && !onBar)
-                _moveDirection.y += calculatedGravity * Time.deltaTime;
+                targetVelocity.y += calculatedGravity * Time.deltaTime;
         }
         else if (airStreamEnabled)
         {
-            _moveDirection = currentWindDirection;
+            targetVelocity = currentWindDirection;
         }
 
         //Neutralizing Y moves when grounded, or head hitting ceiling or dashing
         if (collisions.above || collisions.below)
         {
-            _moveDirection.y = 0;
+            targetVelocity.y = 0;
         }
 
         //And finally, let's call the final method that will process collision before moving the player =D
-        ApplyMoveAndCollisions(_moveDirection * Time.deltaTime);
+        ApplyMoveAndCollisions(targetVelocity * Time.deltaTime);
     }
 
     void GetTouchInputStats ()
@@ -179,7 +179,7 @@ public class Player : Characters
     public void JustGrabbedBar (GrabbingBar bar, Vector2 targetPoint)
     {
         onBar = true;
-        _moveDirection = Vector3.zero; //Just grabbed bar, resetting current move dir to immobilize player
+        targetVelocity = Vector3.zero; //Just grabbed bar, resetting current move dir to immobilize player
 
         //Make sure the player will go full wind speed when dropping the bar
         currentWindDirection = targetWindDirection;
@@ -218,7 +218,7 @@ public class Player : Characters
     }
     void HurtRecoil()
     {
-        currentWindDirection = -_moveDirection * 1.5f;
+        currentWindDirection = -targetVelocity * 1.5f;
         HurtRecoveryTimer = 2f;
 
         if (onBar)
