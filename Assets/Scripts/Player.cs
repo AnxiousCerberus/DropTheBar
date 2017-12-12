@@ -24,7 +24,7 @@ public class Player : Characters
 
     #region Processing Vars
     [HideInInspector]
-    public Vector3 targetVelocity; //Final move direction, used to move player
+    public Vector3 _moveTarget; //Final move direction, used to move player
     #endregion
 
     #region TouchStatus
@@ -36,13 +36,7 @@ public class Player : Characters
     bool simpleTap = false;
     #endregion
 
-    private void Start()
-    {
-        //Collisions & Physics base calculation
-        CalculateRaySpacing();
-    }
-
-    private void Update()
+    protected override void ComputeVelocity()
     {
         simpleTap = false; //Resetting simpleTap for the beginning of this frame.
 
@@ -53,7 +47,7 @@ public class Player : Characters
         if (currentBar != null)
         {
             //Applying bar grab offset. This simulates the player being attached to the bar without using a transform parenting.
-            transform.position =  currentBar.transform.position + grabOffset;
+            transform.position = currentBar.transform.position + grabOffset;
         }
 
         //TODO : Normalize wind direction, maybe? Not sure how we can do this with other forces but...
@@ -93,21 +87,25 @@ public class Player : Characters
         {
             //Applying Gravity
             if (GravityOn && !onBar)
-                targetVelocity.y += calculatedGravity * Time.deltaTime;
+                _moveTarget.y += calculatedGravity * Time.deltaTime;
         }
         else if (airStreamEnabled)
         {
-            targetVelocity = currentWindDirection;
+            _moveTarget = currentWindDirection;
         }
 
         //Neutralizing Y moves when grounded, or head hitting ceiling or dashing
         if (collisions.above || collisions.below)
         {
-            targetVelocity.y = 0;
+            _moveTarget.y = 0;
         }
 
         //And finally, let's call the final method that will process collision before moving the player =D
-        ApplyMoveAndCollisions(targetVelocity * Time.deltaTime);
+
+        //ApplyMoveAndCollisions(targetVelocity * Time.deltaTime);
+
+        targetVelocity = _moveTarget;
+        Debug.Log("Current Target Velocity = " + _moveTarget);
     }
 
     void GetTouchInputStats ()
@@ -179,7 +177,7 @@ public class Player : Characters
     public void JustGrabbedBar (GrabbingBar bar, Vector2 targetPoint)
     {
         onBar = true;
-        targetVelocity = Vector3.zero; //Just grabbed bar, resetting current move dir to immobilize player
+        _moveTarget = Vector3.zero; //Just grabbed bar, resetting current move dir to immobilize player
 
         //Make sure the player will go full wind speed when dropping the bar
         currentWindDirection = targetWindDirection;
@@ -218,7 +216,7 @@ public class Player : Characters
     }
     void HurtRecoil()
     {
-        currentWindDirection = -targetVelocity * 1.5f;
+        currentWindDirection = -_moveTarget * 1.5f;
         HurtRecoveryTimer = 2f;
 
         if (onBar)
