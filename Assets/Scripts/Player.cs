@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Player : Characters
+public class Player : MonoBehaviour
 {
     public Text debugText;
     public float HurtRecoveryTimer = 0;
@@ -36,8 +36,53 @@ public class Player : Characters
     bool simpleTap = false;
     #endregion
 
-    protected override void ComputeVelocity()
+    //OOOOOH EXPERIMENTAL STUFF, TODO : CLEAN UP YOUR SHIT
+    [Header("Common character vars")]
+    public int maxHealth = 4;
+    public int currentHealth = 4;
+
+    #region Basic Moves Inspector Variables
+    [Header("Basic moves options")]
+    public float speed = 10;
+    #endregion
+
+    #region Character Collision System
+    [Header("Collision Detection Options")]
+    protected const float shellRadius = 0.01f;
+    #endregion
+
+    #region external components
+    [HideInInspector]
+    public CharactersSharedVariables sharedVariables;
+    #endregion
+
+    public float minGroundNormalY = .65f;
+    public float gravityModifier = 1f;
+
+    protected Vector2 targetVelocity;
+    protected bool grounded;
+    protected Vector2 groundNormal;
+    protected Rigidbody2D rb2d;
+    protected Vector2 velocity;
+    protected ContactFilter2D contactFilter;
+    protected RaycastHit2D[] hitBuffer = new RaycastHit2D[16];
+    protected List<RaycastHit2D> hitBufferList = new List<RaycastHit2D>(16);
+
+    protected const float minMoveDistance = 0.001f;
+
+    private void OnEnable()
     {
+        rb2d = GetComponent<Rigidbody2D>();
+    }
+
+    void Update()
+    {
+        if (currentHealth > maxHealth)
+            currentHealth = maxHealth;
+
+        //Reset some values to make sure we aren't using previous frame's state for this new one
+        FrameStartValues();
+
         simpleTap = false; //Resetting simpleTap for the beginning of this frame.
 
         HurtRecovery();
@@ -82,30 +127,59 @@ public class Player : Characters
             airStreamEnabled = true;
         }
 
-        //Gravity and wind!
-        if (currentWindDirection == Vector2.zero)
+        //Player's direction if they're in the wind and not grabbing anything
+        if (airStreamEnabled)
         {
-            //Applying Gravity
-            if (GravityOn && !onBar)
-                _moveTarget.y += calculatedGravity * Time.deltaTime;
+            targetVelocity = currentWindDirection;
         }
-        else if (airStreamEnabled)
+    }
+
+    private void FixedUpdate()
+    {
+        velocity = targetVelocity;
+
+        Vector2 deltaPosition = velocity * Time.deltaTime; //Distance we plan to travel in one frame
+
+        Movement(deltaPosition);
+    }
+
+    private void Movement(Vector2 Move)
+    {
+        float distance = Move.magnitude;
+
+        if (distance > minMoveDistance)
         {
-            _moveTarget = currentWindDirection;
+            int count = rb2d.Cast(Move, contactFilter, hitBuffer, distance + shellRadius);
+
+            //moving points from array to a list (TODO : Isn't there a more efficient way?)
+            hitBufferList.Clear();
+            for (int i = 0; i < count; i++)
+            {
+                hitBufferList.Add(hitBuffer[i]);
+            }
+
+            //Collision points... ?
+            for (int i = 0; i < hitBufferList.Count; i++)
+            {
+                Vector2 currentNormal = hitBufferList[i].normal;
+                float projection = Vector2.Dot(velocity, currentNormal);
+                if (projection < 0)
+                {
+                    velocity = velocity - projection * currentNormal;
+                }
+
+                float modifiedDistance = hitBufferList[i].distance - shellRadius;
+                distance = modifiedDistance < distance ? modifiedDistance : distance;
+            }
+
         }
 
-        //Neutralizing Y moves when grounded, or head hitting ceiling or dashing
-        if (collisions.above || collisions.below)
-        {
-            _moveTarget.y = 0;
-        }
+        rb2d.position = rb2d.position + Move.normalized * distance;
+    }
 
-        //And finally, let's call the final method that will process collision before moving the player =D
-
-        //ApplyMoveAndCollisions(targetVelocity * Time.deltaTime);
-
-        targetVelocity = _moveTarget;
-        Debug.Log("Current Target Velocity = " + _moveTarget);
+    void FrameStartValues ()
+    {
+        targetVelocity = Vector2.zero;
     }
 
     void GetTouchInputStats ()
@@ -232,7 +306,6 @@ public class Player : Characters
             HurtRecoveryTimer -= Time.deltaTime;
     }
     #endregion
-
 
     Vector2 LineIntersectionPoint(Vector2 ps1, Vector2 pe1, Vector2 ps2, Vector2 pe2)
     {
