@@ -138,6 +138,9 @@ public class Player : MonoBehaviour
     {
         velocity = targetVelocity;
 
+        //Multiplied by x or y of player's direction, this gives the parallel of the normal of what we hit
+        Vector2 moveAlongGround = new Vector2(groundNormal.y, -groundNormal.x);
+
         Vector2 deltaPosition = velocity * Time.deltaTime; //Distance we plan to travel in one frame
 
         Movement(deltaPosition);
@@ -162,6 +165,8 @@ public class Player : MonoBehaviour
             for (int i = 0; i < hitBufferList.Count; i++)
             {
                 Vector2 currentNormal = hitBufferList[i].normal;
+                groundNormal = currentNormal; //TODO : Not sure about this. But the idea is to get this normal to change the direction of the player in case they collided with a slope
+
                 float projection = Vector2.Dot(velocity, currentNormal);
                 if (projection < 0)
                 {
