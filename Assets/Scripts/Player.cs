@@ -156,6 +156,7 @@ public class Player : MonoBehaviour
             for (int i = 0; i < count; i++)
             {
                 hitBufferList.Add(hitBuffer[i]);
+                Debug.Log("Added hit point to hitBufferList");
             }
 
             //Collision points... ?
@@ -163,9 +164,12 @@ public class Player : MonoBehaviour
             {
                 Vector2 currentNormal = hitBufferList[i].normal;
                 float projection = Vector2.Dot(velocity, currentNormal);
+                
                 if (projection < 0)
                 {
                     velocity = velocity - projection * currentNormal;
+                    Debug.Log("Triggered projection");
+                    Debug.DrawRay(transform.position, velocity * 3, Color.red);
                 }
 
                 float modifiedDistance = hitBufferList[i].distance - shellRadius;
@@ -174,7 +178,7 @@ public class Player : MonoBehaviour
 
         }
 
-        rb2d.position = rb2d.position + Move.normalized * distance;
+        rb2d.position = rb2d.position + velocity.normalized * distance;
     }
 
     void FrameStartValues ()

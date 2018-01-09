@@ -103,6 +103,7 @@ public class Characters : MonoBehaviour
 
         if (distance > minMoveDistance)
         {
+            //TODO : WHY THE FUCK IS THE HITBUFFER EMPTY????
             int count = rb2d.Cast(Move, contactFilter, hitBuffer, distance + shellRadius);
 
             if (count > 0)
@@ -112,13 +113,17 @@ public class Characters : MonoBehaviour
             for (int i = 0; i < count; i++)
             {
                 hitBufferList.Add(hitBuffer[i]);
+                Debug.Log("Added hit point to hitBufferList");
             }
 
             //Collision points... ?
+
+            //TODO: This is DA WAY
             for (int i = 0; i < hitBufferList.Count; i++)
             {
                 Debug.DrawLine(transform.position, hitBufferList[i].point, Color.red);
                 Vector2 currentNormal = hitBufferList[i].normal;
+                Debug.DrawRay(transform.position, currentNormal * 5, Color.red);
                 if (currentNormal.y > minGroundNormalY)
                 {
                     grounded = true;
@@ -142,8 +147,6 @@ public class Characters : MonoBehaviour
         }
 
         //TODO : This is experimental as fuck
-
-
         rb2d.position = rb2d.position + Move.normalized * distance;
         Debug.Log(transform.name + " just moved with this target velocity => " + targetVelocity);
         Debug.Log("END rb2d position =" + rb2d.position + " Move normalized = " + Move.normalized + " Distance = " + distance);

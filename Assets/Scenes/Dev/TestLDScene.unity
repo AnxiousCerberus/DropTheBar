@@ -88,6 +88,7 @@ LightmapSettings:
     m_PVRFilteringAtrousPositionSigmaDirect: 0.5
     m_PVRFilteringAtrousPositionSigmaIndirect: 2
     m_PVRFilteringAtrousPositionSigmaAO: 1
+    m_ShowResolutionOverlay: 1
   m_LightingDataAsset: {fileID: 0}
   m_UseShadowmask: 1
 --- !u!196 &4
@@ -4271,38 +4272,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47bcc1effdd936a4bbbdf90a60b0aa7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImmediateTestMode: 0
-  maxHealth: 4
-  currentHealth: 4
-  GravityOn: 1
-  speed: 50
-  jumpHeight: 2
-  timeToJumpApex: 0.5
-  skinWidth: 0.1
-  horizontalRayCount: 4
-  verticalRayCount: 4
-  collisionMask:
-    serializedVersion: 2
-    m_Bits: 256
-  maxClimbAngle: 89
-  maxDescendAngle: 75
-  jumping: 0
-  CurrentYSpeedMaxClamp: 0
-  calculatedJumpForce: 0
-  calculatedGravity: 0
-  thisCollider: {fileID: 0}
-  thisRigidbody: {fileID: 0}
-  thisSprite: {fileID: 0}
-  animator: {fileID: 0}
-  sharedVariables: {fileID: 0}
-  minGroundNormalY: 0.65
-  gravityModifier: 0
   debugText: {fileID: 1300655876}
   HurtRecoveryTimer: 0
   currentWindDirection: {x: 0, y: 0}
   targetWindDirection: {x: 0, y: 0}
   currentBar: {fileID: 0}
-  targetVelocity: {x: 0, y: 0, z: 0}
+  _moveTarget: {x: 0, y: 0, z: 0}
+  maxHealth: 4
+  currentHealth: 4
+  speed: 50
+  sharedVariables: {fileID: 0}
+  minGroundNormalY: 0.65
+  gravityModifier: 0
 --- !u!212 &759506218
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -4901,8 +4882,8 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1156381471}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 453, y: 211.5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0, y: 0, z: 0}
   m_Children:
   - {fileID: 1300655875}
   m_Father: {fileID: 0}
@@ -5454,7 +5435,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1300655875
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5462,7 +5443,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1300655874}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -208.25, y: 68.25, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1156381473}
@@ -12710,8 +12691,8 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1466012671}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 453, y: 211.5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0, y: 0, z: 0}
   m_Children:
   - {fileID: 2128585609}
   m_Father: {fileID: 0}
@@ -19354,7 +19335,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 2128585608}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -186, y: -299.5, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1466012674}
